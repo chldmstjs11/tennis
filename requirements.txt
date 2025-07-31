@@ -1,5 +1,5 @@
 
 streamlit
 opencv-python-headless
-openai
 numpy
+openai>=1.14.0

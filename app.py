@@ -3,11 +3,11 @@ import streamlit as st
 import cv2
 import tempfile
 import numpy as np
-import openai
-import os
 import base64
+import os
+from openai import OpenAI
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def encode_image_to_base64(image):
     _, buffer = cv2.imencode('.jpg', image)
@@ -15,19 +15,24 @@ def encode_image_to_base64(image):
 
 def analyze_with_gpt(frame):
     base64_image = encode_image_to_base64(frame)
+    image_url = f"data:image/jpeg;base64,{base64_image}"
+
     prompt = "이 이미지는 테니스 자세입니다. 이 자세를 분석해서 점수(100점 만점)를 주고, 무엇이 잘 되었고 어떤 점을 개선해야 하는지 알려주세요."
 
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4-vision-preview",
         messages=[
-            {"role": "user", "content": [
-                {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-            ]}
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": image_url}}
+                ]
+            }
         ],
         max_tokens=500
     )
-    return response['choices'][0]['message']['content']
+    return response.choices[0].message.content
 
 st.set_page_config(page_title="Tennis Pose GPT Analyzer", layout="centered")
 st.title("🎾 테니스 자세 GPT 분석기")
